@@ -1,22 +1,19 @@
 const express = require('express');
 const session = require('express-session');
-const ytDlp = require('yt-dlp-exec');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const sanitize = require('sanitize-filename');
-const { spawn } = require('child_process');
-
-ytDlp.setYtDlpPath('/usr/local/bin/yt-dlp');
+const { spawn, execSync } = require('child_process');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 const PASSWORD = process.env.SITE_PASSWORD || "djmusic";
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || '44efa8ad6bda8dbb1d54cca2ca7af938af52e757e0f82565a0156510d7d5ffc9',
+  secret: process.env.SESSION_SECRET || 'ioharpvoubeihjkbcioxmreibfzhbviueabviour',
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -452,10 +449,11 @@ app.get('/download', requireAuth, async (req, res) => {
     
     console.log(`Traitement de la vidéo: ${url}`);
 
-    const info = await ytDlp(url, {
-      dumpJson: true,
-      skipDownload: true
+    const infoJson = execSync(`yt-dlp --dump-json --skip-download "${url}"`, {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024
     });
+    const info = JSON.parse(infoJson);
     
     const title = sanitize(info.title);
     const artist = sanitize(info.uploader || info.channel || 'Artiste Inconnu');
@@ -469,7 +467,9 @@ app.get('/download', requireAuth, async (req, res) => {
     const ytDlpProcess = spawn('yt-dlp', [
       url,
       '-f', 'bestaudio',
-      '-o', '-'
+      '-o', '-',
+      '--sleep-interval', '0',
+      '--max-sleep-interval', '0'
     ]);
 
     ytDlpProcess.stderr.on('data', (data) => {
