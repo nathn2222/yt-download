@@ -6,6 +6,8 @@ const ffmpegPath = require('ffmpeg-static');
 const sanitize = require('sanitize-filename');
 const { spawn } = require('child_process');
 
+ytDlp.setYtDlpPath('/usr/local/bin/yt-dlp');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PASSWORD = process.env.SITE_PASSWORD || "djmusic";
