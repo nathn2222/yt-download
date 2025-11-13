@@ -6,14 +6,22 @@ const sanitize = require('sanitize-filename');
 const { spawn, execSync } = require('child_process');
 
 const app = express();
-const PORT = process.env.PORT || 3010;
-const PASSWORD = process.env.SITE_PASSWORD || "djmusic";
+const PORT = process.env.PORT || 3000;
+const PASSWORD = process.env.SITE_PASSWORD || "monmotdepasse";
+
+const fs = require('fs');
+
+if (process.env.YOUTUBE_COOKIES) {
+  const cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES, 'base64').toString('utf-8');
+  fs.writeFileSync('cookies.txt', cookiesContent);
+  console.log('✅ Cookies YouTube chargés');
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'ioharpvoubeihjkbcioxmreibfzhbviueabviour',
+  secret: process.env.SESSION_SECRET || 'ma-cle-secrete-super-longue',
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -449,7 +457,7 @@ app.get('/download', requireAuth, async (req, res) => {
     
     console.log(`Traitement de la vidéo: ${url}`);
 
-    const infoJson = execSync(`yt-dlp --dump-json --skip-download "${url}"`, {
+    const infoJson = execSync(`yt-dlp --cookies cookies.txt --dump-json --skip-download "${url}"`, {
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024
     });
@@ -465,6 +473,7 @@ app.get('/download', requireAuth, async (req, res) => {
     res.header('Content-Type', 'audio/mpeg');
 
     const ytDlpProcess = spawn('yt-dlp', [
+      '--cookies', 'cookies.txt',
       url,
       '-f', 'bestaudio',
       '-o', '-',
